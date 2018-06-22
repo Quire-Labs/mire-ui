@@ -22,11 +22,11 @@ it('contains a form', () => {
 });
 
 it('requests user email', () => {
-  expect(testElem.querySelector('input[type=email]')).toBeTruthy();
+  expect(testElem.querySelector('input[name=email]')).toBeTruthy();
 });
 
 it('requests user password', () => {
-  expect(testElem.querySelector('input[type=password]')).toBeTruthy();
+  expect(testElem.querySelector('input[name=password]')).toBeTruthy();
 });
 
 it('has login button', () => {

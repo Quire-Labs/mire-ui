@@ -8,9 +8,9 @@ export default class Login extends Component {
       <section className="login">
         <h3>Log into {config.APP_NAME}</h3>
         <form method="POST" action="/api/users/login">
-          <input type="email" placeholder="Email Address" />
+          <input name="email" type="email" placeholder="Email Address" />
           <br />
-          <input type="password" placeholder="Password" />
+          <input name="password" type="password" placeholder="Password" />
           <br />
           <input type="submit" value="Login" />
           <br />
