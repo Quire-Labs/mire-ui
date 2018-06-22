@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-// import './Register.css';
 import config from './config.json';
 
 export default class Register extends Component {
