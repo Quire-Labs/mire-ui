@@ -18,7 +18,7 @@ export default class Login extends Component {
             Forgot Password
           </a>
           <br />
-          <input type="button" className="register" value="Register" />
+          <a href="/register" className="register">Register</a>
         </form>
       </section>
     );

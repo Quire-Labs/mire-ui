@@ -37,6 +37,10 @@ it('has forgot link', () => {
   expect(testElem.querySelector('a.forgot')).toBeTruthy();
 });
 
-it('has create new account button', () => {
-  expect(testElem.querySelector('input[type=button].register')).toBeTruthy();
+it('has create new account link', () => {
+  expect(testElem.querySelector('a.register')).toBeTruthy();
+});
+
+it('links to /register', () => {
+  expect(testElem.querySelector('a.register').href).toMatch('/register');
 });

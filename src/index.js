@@ -1,8 +1,23 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import Register from './Register';
+import { BrowserRouter, Route } from 'react-router-dom';
 import registerServiceWorker from './registerServiceWorker';
+import Login from './Login';
+import Register from './Register';
 
-ReactDOM.render(<Register />, document.getElementById('root'));
+const App = () => {
+  return (
+    <div>
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
+    </div>
+  );
+}
+
+ReactDOM.render((
+  <BrowserRouter>
+    <App />
+  </BrowserRouter>
+), document.getElementById('root'));
 registerServiceWorker();
