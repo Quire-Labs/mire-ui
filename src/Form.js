@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import Validator from './formValidator';
 
 export default class Form extends Component {
   constructor(props) {
@@ -10,11 +11,13 @@ export default class Form extends Component {
       passwordconfirm: ''
     };
     this.handleChange = this.handleChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
+    this.validator = new Validator();
   }
 
   render() {
     return (
-      <form method="POST" action="/api/users/register">
+      <form method="POST" action="/api/users/register" onSubmit={this.handleSubmit}>
         <input name="email" type="email" placeholder="Email"
           value={this.state.email} onChange={this.handleChange} />
         <br />
@@ -37,5 +40,10 @@ export default class Form extends Component {
     const name = event.target.name;
     const value = event.target.value;
     this.setState({[name]: value});
+  }
+
+  handleSubmit(event) {
+    event.preventDefault();
+    return this.validator.validate(this.state).isValid;
   }
 }

@@ -6,7 +6,7 @@ import Adapter from 'enzyme-adapter-react-16';
 
 Enzyme.configure({ adapter: new Adapter() });
 
-describe('Test Elements Exist', () => {
+describe('Test elements exist', () => {
   let wrapper;
 
   beforeAll(() => {
@@ -14,39 +14,39 @@ describe('Test Elements Exist', () => {
   });
 
   it('has form', () => {
-    hasElementTest('form');
+    expectElementToExist('form');
   });
 
   it('has email input', () => {
-    hasElementWithNameTest('email');
+    expectElementWithNameToExist('email');
   });
 
   it('has username input', () => {
-    hasElementWithNameTest('username');
+    expectElementWithNameToExist('username');
   });
 
   it('has password input', () => {
-    hasElementWithNameTest('password');
+    expectElementWithNameToExist('password');
   });
 
   it('has passwordconfirm input', () => {
-    hasElementWithNameTest('passwordconfirm');
+    expectElementWithNameToExist('passwordconfirm');
   });
 
   it('has register button', () => {
-    hasElementTest(`input[type='submit']`);
+    expectElementToExist(`input[type='submit']`);
   });
 
-  function hasElementTest(selector) {
+  function expectElementToExist(selector) {
     expect(wrapper.find(selector)).toBeTruthy();
   }
 
-  function hasElementWithNameTest(name) {
-    hasElementTest(`input[name='${name}']`);
+  function expectElementWithNameToExist(name) {
+    expectElementToExist(`input[name='${name}']`);
   }
 });
 
-describe('Test State Update', () => {
+describe('Test state update', () => {
   let wrapper, preventDefault, mockEvent;
 
   beforeAll(() => {
@@ -62,26 +62,75 @@ describe('Test State Update', () => {
   });
 
   it('updates state when email value changes', () => {
-    updateStateTest('email');
+    expectStateToUpdate('email');
   });
 
   it('updates state when username value changes', () => {
-    updateStateTest('username');
+    expectStateToUpdate('username');
   });
 
   it('updates state when password value changes', () => {
-    updateStateTest('password');
+    expectStateToUpdate('password');
   });
 
   it('updates state when passwordconfirm value changes', () => {
-    updateStateTest('passwordconfirm');
+    expectStateToUpdate('passwordconfirm');
   });
 
-  function updateStateTest(inputName) {
+  function expectStateToUpdate(inputName) {
     let input = wrapper.find(`input[name='${inputName}']`);
     input.simulate('change', mockEvent);
     expect(preventDefault).toBeCalled();
     expect(wrapper.state().foo).toBeDefined();
     expect(wrapper.state().foo).toMatch('bar');
   }
+});
+
+describe('Test form validation', () => {
+  let spy, wrapper, preventDefault, mockEvent;
+
+  beforeEach(() => {
+    spy = jest.spyOn(Form.prototype, 'handleSubmit');
+    wrapper = shallow(<Form />);
+    preventDefault = jest.fn();
+    mockEvent = { preventDefault };
+  });
+
+  it('has submit method', () => {
+    wrapper.simulate('submit', mockEvent);
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('fails to submit when no values', () => {
+    expectAllHaveEmptyValue(['email', 'username', 'password', 'passwordconfirm']);
+    let result = wrapper.instance().handleSubmit(mockEvent);
+    expect(result).toBeFalsy();
+  });
+
+  it('submits when values are valid', () => {
+    setValidValues();
+    let result = wrapper.instance().handleSubmit(mockEvent);
+    expect(result).toBeTruthy();
+  });
+
+  function setValidValues() {
+    setValue('email', 'foo@foo.foo');
+    setValue('password', 'foobar');
+    setValue('passwordconfirm', 'foobar');
+    setValue('username', 'foobar');
+  }
+
+  function setValue(inputName, value) {
+    wrapper.setState({ [inputName]: value });
+  }
+
+  function expectAllHaveEmptyValue(names) {
+    for (let name of names) {
+      expect(wrapper.find(`input[name='${name}']`).props().value).toMatch('');
+    }
+  }
+
+  afterEach(() => {
+    spy.mockRestore();
+  });
 });
