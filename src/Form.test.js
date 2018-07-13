@@ -37,6 +37,10 @@ describe('Test elements exist', () => {
     expectElementToExist(`input[type='submit']`);
   });
 
+  it('has error reporter', () => {
+    expectElementToExist('ErrorList');
+  });
+
   function expectElementToExist(selector) {
     expect(wrapper.find(selector)).toBeTruthy();
   }
@@ -105,6 +109,9 @@ describe('Test form validation', () => {
     expectAllHaveEmptyValue(['email', 'username', 'password', 'passwordconfirm']);
     let result = wrapper.instance().handleSubmit(mockEvent);
     expect(result).toBeFalsy();
+    expect(wrapper.state().errors).toContain('Empty email');
+    expect(wrapper.state().errors).toContain('Empty username');
+    expect(wrapper.state().errors).toContain('Empty password');
   });
 
   it('submits when values are valid', () => {
