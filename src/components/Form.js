@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
-import Validator from './formValidator';
-import './css/form.css';
-import ErrorList from './ErrorList';
+import Validator from '../js/formValidator';
+import '../css/form.css';
+import ErrorList from '../components/ErrorList';
 
 export default class Form extends Component {
   constructor(props) {

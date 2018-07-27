@@ -1,4 +1,4 @@
-import Validator from './formValidator';
+import Validator from '../../js/formValidator';
 
 const validator = new Validator();
 let state = {};

@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import Login from './Login';
-import config from './config.json';
+import Login from '../../components/Login';
+import config from '../../config/config.json';
 
 let testElem;
 beforeAll(() => {

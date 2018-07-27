@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
-import config from './config.json';
-import Form from './Form';
+import config from '../config/config.json';
+import Form from '../components/Form';
 
 export default class Register extends Component {
   render() {

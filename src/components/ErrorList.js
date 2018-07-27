@@ -1,5 +1,5 @@
 import React from 'react';
-import './css/errorList.css';
+import '../css/errorList.css';
 
 export default function ErrorList(props) {
   return (

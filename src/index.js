@@ -1,9 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { BrowserRouter, Route } from 'react-router-dom';
-import registerServiceWorker from './registerServiceWorker';
-import Login from './Login';
-import Register from './Register';
+import registerServiceWorker from './js/registerServiceWorker';
+import Login from './components/Login';
+import Register from './components/Register';
 
 const App = () => {
   return (

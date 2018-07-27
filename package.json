@@ -14,14 +14,14 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "coverage": "npm test -- --coverage"
   },
   "jest": {
-    "collectCoverageFrom" : [
+    "collectCoverageFrom": [
       "src/**/*.{js,jsx}",
       "!<rootDir>/node_modules/",
-      "!<rootDir>/path/to/dir/",
-      "!src/registerServiceWorker.js",
+      "!src/js/registerServiceWorker.js",
       "!src/index.js"
     ],
     "coverageThreshold": {
@@ -32,6 +32,9 @@
         "statements": 90
       }
     },
-    "coverageReporters": ["text"]
-  }
+    "coverageReporters": [
+      "text"
+    ]
+  },
+  "devDependencies": {}
 }
