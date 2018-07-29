@@ -1,4 +1,4 @@
-import { register } from '../../api/authApi';
+import { register } from '../../api/authApiBridge';
 
 it('returns a response object', async () => {
   let res = await register({});
