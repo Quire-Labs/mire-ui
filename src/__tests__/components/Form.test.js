@@ -1,10 +1,14 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import Form from '../../components/Form';
+import Register from '../../components/Register';
+import Feed from '../../components/Feed';
 import Enzyme, { shallow } from 'enzyme';
 import Adapter from 'enzyme-adapter-react-16';
+import { register } from '../../api/authApi';
 
 Enzyme.configure({ adapter: new Adapter() });
+jest.mock('../../api/authApi');
 
 describe('Test elements exist', () => {
   let wrapper;
@@ -105,9 +109,9 @@ describe('Test form validation', () => {
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
-  it('fails to submit when no values', () => {
+  it('fails to submit when no values', async () => {
     expectAllHaveEmptyValue(['email', 'username', 'password', 'passwordconfirm']);
-    let result = wrapper.instance().handleSubmit(mockEvent);
+    let result = await wrapper.instance().handleSubmit(mockEvent);
     expect(result).toBeFalsy();
     expect(wrapper.state().errors).toContain('Empty email');
     expect(wrapper.state().errors).toContain('Empty username');
@@ -140,4 +144,83 @@ describe('Test form validation', () => {
   afterEach(() => {
     spy.mockRestore();
   });
+});
+
+describe('Test api', () => {
+  let wrapper, mockEvent, redirectToFeedSpy;
+  const mockValidState = {
+    'email': 'foo@foo.foo',
+    'password': 'foobar',
+    'passwordconfirm': 'foobar',
+    'username': 'foobar'
+  };
+  const mockToken = 'foobar';
+
+  beforeEach(() => {
+    setupMocks();
+    wrapper = shallow(<Form />);
+    wrapper.setState(mockValidState);
+  });
+
+  it('receives correct data', async () => {
+    await wrapper.instance().handleSubmit(mockEvent);
+    expect(register).toHaveBeenCalledTimes(1);
+    expect(register).toHaveBeenCalledWith(mockValidState);
+  });
+
+  it('not called for invalid data', async () => {
+    wrapper.setState({'email': ''});
+    await wrapper.instance().handleSubmit(mockEvent);
+    expect(register).not.toHaveBeenCalled();
+  });
+
+  it('returns auth token for correct data', async () => {
+    await wrapper.instance().handleSubmit(mockEvent);
+    expect(register).toHaveBeenCalledTimes(1);
+    expect(wrapper.state().token).toEqual(mockToken);
+  });
+
+  it('redirects for correct data', async () => {
+    await wrapper.instance().handleSubmit(mockEvent);
+    expect(register).toHaveBeenCalledTimes(1);
+    expect(redirectToFeedSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('handles server-side errors', async () => {
+    mockRegisterInvalid();
+    await wrapper.instance().handleSubmit(mockEvent);
+    expect(register).toHaveBeenCalledTimes(1);
+    expect(wrapper.state().errors).toContain('Username already taken!');
+    expect(redirectToFeedSpy).not.toHaveBeenCalled();
+  });
+
+  afterEach(() => {
+    register.mockClear();
+  });
+
+  function setupMocks() {
+    mockRegisterValid();
+    mockEvent = { preventDefault: jest.fn() };
+    jest.mock('../../components/Form');
+    redirectToFeedSpy = jest.spyOn(Form, 'redirectToFeed');
+    redirectToFeedSpy.mockClear();
+    register.mockClear();
+  }
+
+  function mockRegisterValid() {
+    register.mockReturnValue({
+      'token': mockToken,
+      'statusCode': 200,
+      'content': 'Created user'
+    });
+  }
+
+  function mockRegisterInvalid() {
+    register.mockReturnValue({
+      'token': mockToken,
+      'statusCode': 400,
+      'content': 'Username already taken!'
+    });
+  }
+
 });
