@@ -2,43 +2,43 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import Form from '../../components/Form';
 import Register from '../../components/Register';
-import Feed from '../../components/Feed';
 import Enzyme, { shallow } from 'enzyme';
 import Adapter from 'enzyme-adapter-react-16';
-import { register } from '../../api/authApi';
+import { register } from '../../api/authApiBridge';
 
 Enzyme.configure({ adapter: new Adapter() });
-jest.mock('../../api/authApi');
+jest.mock('../../api/authApiBridge');
 
 describe('Test elements exist', () => {
   let wrapper;
 
   beforeAll(() => {
-    wrapper = shallow(<Form />);
+    wrapper = shallow(
+      <Form submitPrompt="foobar" inputs={[
+        {name: 'foo', placeholder: 'foobar', type: 'email'},
+        {name: 'bar', type: 'password'},
+        {name: 'baz'}]} />
+    );
   });
 
   it('has form', () => {
     expectElementToExist('form');
   });
 
-  it('has email input', () => {
-    expectElementWithNameToExist('email');
+  it('has all items input', () => {
+    expectElementWithNameToExist('foo');
+    expectElementWithNameToExist('bar');
+    expectElementWithNameToExist('baz');
   });
 
-  it('has username input', () => {
-    expectElementWithNameToExist('username');
+  it('placeholder is set', () => {
+    expect(wrapper.find(`[name='foo']`).props().placeholder).toEqual('foobar');
   });
 
-  it('has password input', () => {
-    expectElementWithNameToExist('password');
-  });
-
-  it('has passwordconfirm input', () => {
-    expectElementWithNameToExist('passwordconfirm');
-  });
-
-  it('has register button', () => {
-    expectElementToExist(`input[type='submit']`);
+  it('types are set', () => {
+    expectElementToExist(`[type='email']`);
+    expectElementToExist(`[type='password']`);
+    expectElementToExist(`[type='text']`);
   });
 
   it('has error reporter', () => {
@@ -46,7 +46,7 @@ describe('Test elements exist', () => {
   });
 
   function expectElementToExist(selector) {
-    expect(wrapper.find(selector)).toBeTruthy();
+    expect(wrapper.find(selector)).toHaveLength(1);
   }
 
   function expectElementWithNameToExist(name) {
@@ -54,11 +54,50 @@ describe('Test elements exist', () => {
   }
 });
 
+describe('Test redirect', () => {
+  let wrapper, mockEvent, mockValidator;
+
+  beforeAll(() => {
+    let mockValidate = jest.fn();
+    mockValidate.mockReturnValue({ isValid: true, errors: [] });
+    mockValidator = { validate: mockValidate };
+    mockEvent = {
+      preventDefault: jest.fn(),
+      target: {
+        name: 'foo',
+        value: 'bar'
+      }
+    };
+    register.mockReturnValue({
+      'token': 'foobar',
+      'statusCode': 200,
+      'content': 'foobar'
+    });
+  });
+
+  it('redirects to correct url', async () => {
+    window.location.assign = jest.fn();
+    wrapper = shallow(
+      <Form
+        submitPrompt=""
+        inputs={[]}
+        redirect='/foobar'
+        validator={mockValidator} />
+    );
+    await wrapper.instance().handleSubmit(mockEvent);
+    expect(window.location.assign).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('Test state update', () => {
   let wrapper, preventDefault, mockEvent;
 
   beforeAll(() => {
-    wrapper = shallow(<Form />);
+    wrapper = shallow(
+      <Form submitPrompt="foobar" inputs={[
+        {name: 'foo', placeholder: 'foobar', type: 'email'},
+        {name: 'bar', type: 'password'}]} />
+    );
     preventDefault = jest.fn();
     mockEvent = {
       preventDefault,
@@ -69,20 +108,9 @@ describe('Test state update', () => {
     };
   });
 
-  it('updates state when email value changes', () => {
-    expectStateToUpdate('email');
-  });
-
-  it('updates state when username value changes', () => {
-    expectStateToUpdate('username');
-  });
-
-  it('updates state when password value changes', () => {
-    expectStateToUpdate('password');
-  });
-
-  it('updates state when passwordconfirm value changes', () => {
-    expectStateToUpdate('passwordconfirm');
+  it('updates state when field value changes', () => {
+    expectStateToUpdate('foo');
+    expectStateToUpdate('bar');
   });
 
   function expectStateToUpdate(inputName) {
@@ -94,71 +122,67 @@ describe('Test state update', () => {
   }
 });
 
-describe('Test form validation', () => {
-  let spy, wrapper, preventDefault, mockEvent;
+describe('Test validator', () => {
+  let wrapper, preventDefault, mockEvent, mockValidate;
+
+  beforeAll(() => {
+    mockValidate = jest.fn();
+    let mockValidator = { validate: mockValidate };
+    wrapper = shallow(
+      <Form
+        submitPrompt="foobar"
+        inputs={[
+          {name: 'foo', placeholder: 'foobar', type: 'email'},
+          {name: 'bar', type: 'password'}
+        ]}
+        validator={mockValidator} />
+    );
+    mockEvent = { preventDefault: jest.fn() };
+  });
 
   beforeEach(() => {
-    spy = jest.spyOn(Form.prototype, 'handleSubmit');
-    wrapper = shallow(<Form />);
-    preventDefault = jest.fn();
-    mockEvent = { preventDefault };
+    register.mockClear();
   });
 
-  it('has submit method', () => {
-    wrapper.simulate('submit', mockEvent);
-    expect(spy).toHaveBeenCalledTimes(1);
+  it('calls api on valid', async () => {
+    register.mockReturnValue({
+      'token': 'foobar',
+      'statusCode': 200,
+      'content': 'foobar'
+    });
+    mockValidate.mockReturnValue({errors: [], isValid: true});
+    await wrapper.instance().handleSubmit(mockEvent);
+    expect(register).toHaveBeenCalledTimes(1);
   });
 
-  it('fails to submit when no values', async () => {
-    expectAllHaveEmptyValue(['email', 'username', 'password', 'passwordconfirm']);
-    let result = await wrapper.instance().handleSubmit(mockEvent);
-    expect(result).toBeFalsy();
-    expect(wrapper.state().errors).toContain('Empty email');
-    expect(wrapper.state().errors).toContain('Empty username');
-    expect(wrapper.state().errors).toContain('Empty password');
+  it('prevents api call on invalid', async () => {
+    mockValidate.mockReturnValue({errors: [], isValid: false});
+    await wrapper.instance().handleSubmit(mockEvent);
+    expect(register).not.toHaveBeenCalled();
   });
 
-  it('submits when values are valid', () => {
-    setValidValues();
-    let result = wrapper.instance().handleSubmit(mockEvent);
-    expect(result).toBeTruthy();
+  it('sets error state on error', async () => {
+    mockValidate.mockReturnValue({errors: ['foo', 'bar'], isValid: false});
+    await wrapper.instance().handleSubmit(mockEvent);
+    expect(wrapper.state().errors).toContain('foo');
+    expect(wrapper.state().errors).toContain('bar');
   });
-
-  function setValidValues() {
-    setValue('email', 'foo@foo.foo');
-    setValue('password', 'foobar');
-    setValue('passwordconfirm', 'foobar');
-    setValue('username', 'foobar');
-  }
-
-  function setValue(inputName, value) {
-    wrapper.setState({ [inputName]: value });
-  }
-
-  function expectAllHaveEmptyValue(names) {
-    for (let name of names) {
-      expect(wrapper.find(`input[name='${name}']`).props().value).toMatch('');
-    }
-  }
 
   afterEach(() => {
-    spy.mockRestore();
+    register.mockClear();
   });
+
 });
 
 describe('Test api', () => {
-  let wrapper, mockEvent, redirectToFeedSpy;
-  const mockValidState = {
-    'email': 'foo@foo.foo',
-    'password': 'foobar',
-    'passwordconfirm': 'foobar',
-    'username': 'foobar'
-  };
-  const mockToken = 'foobar';
+  let wrapper, mockEvent, redirectSpy, mockValidator, mockValidate;
+  const mockValidState = { 'foo': 'bar' };
 
   beforeEach(() => {
     setupMocks();
-    wrapper = shallow(<Form />);
+    wrapper = shallow(
+      <Form submitPrompt="" inputs={[]} validator={mockValidator} />
+    );
     wrapper.setState(mockValidState);
   });
 
@@ -168,30 +192,18 @@ describe('Test api', () => {
     expect(register).toHaveBeenCalledWith(mockValidState);
   });
 
-  it('not called for invalid data', async () => {
-    wrapper.setState({'email': ''});
-    await wrapper.instance().handleSubmit(mockEvent);
-    expect(register).not.toHaveBeenCalled();
-  });
-
-  it('returns auth token for correct data', async () => {
-    await wrapper.instance().handleSubmit(mockEvent);
-    expect(register).toHaveBeenCalledTimes(1);
-    expect(wrapper.state().token).toEqual(mockToken);
-  });
-
   it('redirects for correct data', async () => {
     await wrapper.instance().handleSubmit(mockEvent);
     expect(register).toHaveBeenCalledTimes(1);
-    expect(redirectToFeedSpy).toHaveBeenCalledTimes(1);
+    expect(redirectSpy).toHaveBeenCalledTimes(1);
   });
 
   it('handles server-side errors', async () => {
     mockRegisterInvalid();
     await wrapper.instance().handleSubmit(mockEvent);
     expect(register).toHaveBeenCalledTimes(1);
-    expect(wrapper.state().errors).toContain('Username already taken!');
-    expect(redirectToFeedSpy).not.toHaveBeenCalled();
+    expect(wrapper.state().errors).toContain('foobar error');
+    expect(redirectSpy).not.toHaveBeenCalled();
   });
 
   afterEach(() => {
@@ -200,26 +212,37 @@ describe('Test api', () => {
 
   function setupMocks() {
     mockRegisterValid();
+    mockRedirectFunction();
+    mockValidateFunction();
     mockEvent = { preventDefault: jest.fn() };
-    jest.mock('../../components/Form');
-    redirectToFeedSpy = jest.spyOn(Form, 'redirectToFeed');
-    redirectToFeedSpy.mockClear();
     register.mockClear();
+  }
+
+  function mockRedirectFunction() {
+    jest.mock('../../components/Form');
+    redirectSpy = jest.spyOn(Form.prototype, 'redirect');
+    redirectSpy.mockClear();
+  }
+
+  function mockValidateFunction() {
+    mockValidate = jest.fn();
+    mockValidator = { validate: mockValidate };
+    mockValidate.mockReturnValue({isValid: true, errors: []});
   }
 
   function mockRegisterValid() {
     register.mockReturnValue({
-      'token': mockToken,
+      'token': 'foobar',
       'statusCode': 200,
-      'content': 'Created user'
+      'content': 'foobar success'
     });
   }
 
   function mockRegisterInvalid() {
     register.mockReturnValue({
-      'token': mockToken,
+      'token': 'foobar',
       'statusCode': 400,
-      'content': 'Username already taken!'
+      'content': 'foobar error'
     });
   }
 

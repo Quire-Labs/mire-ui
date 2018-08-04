@@ -1,124 +1,50 @@
-import Validator from '../../js/formValidator';
+import FormValidator from '../../js/formValidator';
 
-const validator = new Validator();
-let state = {};
+describe('FormValidator', () => {
+  let validator;
 
-describe('Test empty values', () => {
   beforeEach(() => {
-    state = {
-      email: '',
-      username: '',
-      password: '',
-      passwordconfirm: ''
-    };
+    validator = new FormValidator();
   });
 
-  it('fails for all empty values', () => {
-    let result = validator.validate(state);
-    expect(result.isValid).toBeFalsy();
-    expect(result.errors).toContain('Empty email');
-    expect(result.errors).toContain('Empty username');
-    expect(result.errors).toContain('Empty password');
+  it('calls validators', () => {
+    let mockValidators = [jest.fn(), jest.fn()];
+    mockValidators.forEach(v => {
+      v.mockReturnValue('');
+      validator.addInputValidator(v);
+    });
+    validator.validate({});
+    expect(mockValidators[0]).toHaveBeenCalledTimes(1);
+    expect(mockValidators[1]).toHaveBeenCalledTimes(1);
   });
 
-  it('fails for empty email', () => {
-    state.username = 'foobar';
-    state.password = 'foobar';
-    state.passwordconfirm = 'foobar';
-    let result = validator.validate(state);
-    expect(result.isValid).toBeFalsy();
-    expect(result.errors).toContain('Empty email');
-    expect(result.errors).not.toContain('Empty username');
-    expect(result.errors).not.toContain('Empty password');
-    expect(result.errors).not.toContain('Passwords do no match');
-  });
-
-  it('fails for empty username', () => {
-    state.email = 'foo@foo.bar';
-    state.password = 'foobar';
-    state.passwordconfirm = 'foobar';
-    let result = validator.validate(state);
-    expect(result.isValid).toBeFalsy();
-    expect(result.errors).not.toContain('Empty email');
-    expect(result.errors).toContain('Empty username');
-    expect(result.errors).not.toContain('Empty password');
-    expect(result.errors).not.toContain('Passwords do no match');
-  });
-
-  it('fails for empty password', () => {
-    state.email = 'foo@foo.bar';
-    state.username = 'foobar';
-    let result = validator.validate(state);
-    expect(result.isValid).toBeFalsy();
-    expect(result.errors).not.toContain('Empty email');
-    expect(result.errors).not.toContain('Empty username');
-    expect(result.errors).toContain('Empty password');
-    expect(result.errors).not.toContain('Passwords do no match');
-  });
-});
-
-describe('Test invalid inputs', () => {
-  beforeEach(() => {
-    state = {
-      email: 'foo@foo.foo',
-      username: 'foobar',
-      password: 'foobar',
-      passwordconfirm: 'foobar'
-    };
-  });
-
-  it('succeeds for valid input', () => {
-    let result = validator.validate(state);
+  it('validates input', () => {
+    let mockValidator = jest.fn();
+    mockValidator.mockReturnValue('');
+    validator.addInputValidator(mockValidator);
+    let result = validator.validate({});
     expect(result.isValid).toBeTruthy();
     expect(result.errors).toHaveLength(0);
   });
 
-  it('fails for mismatched password', () => {
-    state.password = 'foo';
-    state.passworconfirm = 'bar';
-    let result = validator.validate(state);
+  it('returns error when a validator fails', () => {
+    let mockValidator = jest.fn();
+    mockValidator.mockReturnValue('foobar error');
+    validator.addInputValidator(mockValidator);
+    let result = validator.validate({});
     expect(result.isValid).toBeFalsy();
-    expect(result.errors).not.toContain('Empty email');
-    expect(result.errors).not.toContain('Empty username');
-    expect(result.errors).not.toContain('Empty password');
-    expect(result.errors).toContain('Passwords do no match');
+    expect(result.errors).toHaveLength(1);
   });
 
-  it('fails for invalid emails', () => {
-    state.email = 'foo';
-    expectInvalidInput(state, 'email');
-    state.email = 'foo@foo';
-    expectInvalidInput(state, 'email');
-    state.email = 'foo@foo.';
-    expectInvalidInput(state, 'email');
-    state.email = '@.';
-    expectInvalidInput(state, 'email');
-    state.email = 'foo@.foo';
-    expectInvalidInput(state, 'email');
-    state.email = 'foo.';
-    expectInvalidInput(state, 'email');
-    state.email = 'foo.foo';
-    expectInvalidInput(state, 'email');
-  });
-
-  function expectInvalidInput(state, name) {
-    let result = validator.validate(state);
+  it('returns errors when multiple validators fail', () => {
+    [jest.fn(), jest.fn()].forEach((v, i) => {
+      v.mockReturnValue(i + '');
+      validator.addInputValidator(v);
+    });
+    let result = validator.validate({});
     expect(result.isValid).toBeFalsy();
-    expect(result.errors).toContain('Invalid ' + name);
-  }
-
-  it('fails for invalid usernames', () => {
-    // too short
-    state.username = 'fo';
-    expectInvalidInput(state, 'username');
-    // too long
-    state.username = 'foobarfoobarfoobar';
-    expectInvalidInput(state, 'username');
-  });
-
-  it('fails for invalid passwords', () => {
-    // too short
-    state.password = 'fooba';
-    expectInvalidInput(state, 'password');
+    expect(result.errors).toHaveLength(2);
+    expect(result.errors).toContain('0');
+    expect(result.errors).toContain('1');
   });
 });

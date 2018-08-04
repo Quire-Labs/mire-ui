@@ -1,41 +1,39 @@
 import React, { Component } from 'react';
-import Validator from '../js/formValidator';
 import '../css/form.css';
 import ErrorList from '../components/ErrorList';
-import { register } from '../api/authApi';
+import { register } from '../api/authApiBridge';
 
 export default class Form extends Component {
   constructor(props) {
     super(props);
-    this.state = {
-      email: '',
-      username: '',
-      password: '',
-      passwordconfirm: '',
-      errors: []
-    };
+    this.state = { errors: [] };
+    for (let inputData of props.inputs) {
+      this.state[inputData.name] = '';
+    }
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
-    this.validator = new Validator();
+    this.redirect = this.redirect.bind(this);
   }
 
   render() {
     return (
       <form onSubmit={this.handleSubmit}>
         <ErrorList errors={this.state.errors} />
-        <input name="email" type="email" placeholder="Email"
-          value={this.state.email} onChange={this.handleChange} />
-        <br />
-        <input name="username" placeholder="Username"
-          value={this.state.username} onChange={this.handleChange} />
-        <br />
-        <input name="password" type="password"
-          value={this.state.password} onChange={this.handleChange} />
-        <br />
-        <input name="passwordconfirm" type="password"
-          value={this.state.passwordconfirm} onChange={this.handleChange} />
-        <br />
-        <input type="submit" value="Register" />
+        {
+          this.props.inputs.map((inputData, i) => {
+            return (
+              <div key={i}>
+                <input
+                  name={inputData.name}
+                  type={inputData.type || 'text'}
+                  placeholder={Form.placeholderForInput(inputData)}
+                  value={this.state[inputData.name]}
+                  onChange={this.handleChange} />
+              </div>
+            );
+          })
+        }
+        <input type="submit" value={this.props.submitPrompt} />
       </form>
     );
   }
@@ -49,13 +47,13 @@ export default class Form extends Component {
 
   async handleSubmit(event) {
     event.preventDefault();
-    const result = this.validator.validate(this.state);
+    const result = this.props.validator.validate(Form.omitErrors(this.state));
     this.setState({errors: result.errors});
     if (result.isValid) {
       let res = await register(Form.omitErrors(this.state));
-      if (res.statusCode && res.statusCode === 200) {
+      if (res.statusCode === 200) {
         this.setState({token: res.token});
-        Form.redirectToFeed();
+        this.redirect();
       } else {
         this.setState({errors: [res.content]});
       }
@@ -69,7 +67,19 @@ export default class Form extends Component {
     return newState
   }
 
-  static redirectToFeed() {
-    window.location.href = '/feed';
+  redirect() {
+    if (this.props.redirect) {
+      window.location.assign(this.props.redirect);
+    }
+  }
+
+  static placeholderForInput(inputData) {
+    return inputData.placeholder || Form.titleify(inputData.name);
+  }
+
+  static titleify(title) {
+    title = title.toLocaleLowerCase();
+    title = title[0].toLocaleUpperCase() + title.substr(1);
+    return title;
   }
 }
